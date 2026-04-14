@@ -1,0 +1,10 @@
+{
+    "code-runner.runInTerminal": true,
+    "code-runner.saveFileBeforeRun": true,
+    "code-runner.fileDirectoryAsCwd": true,
+    "code-runner.clearPreviousOutput": true,
+    "code-runner.showExecutionMessage": false,
+    "code-runner.executorMap": {
+        "c": "powershell -ExecutionPolicy Bypass -File .vscode/run-c.ps1 \"$fullFileName\""
+    }
+}

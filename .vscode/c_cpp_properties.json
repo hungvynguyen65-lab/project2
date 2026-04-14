@@ -1,0 +1,25 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/src",
+                "C:/Users/jonas/AppData/Local/Programs/Python/Python313/Lib/site-packages/ziglang/lib/include",
+                "C:/Users/jonas/AppData/Local/Programs/Python/Python313/Lib/site-packages/ziglang/lib/libc/include/any-windows-any"
+            ],
+            "defines": [
+                "_WIN32",
+                "_WIN64"
+            ],
+            "compilerPath": "C:/Users/jonas/AppData/Local/Programs/Python/Python313/Lib/site-packages/ziglang/zig.exe",
+            "compilerArgs": [
+                "cc"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-clang-x64"
+        }
+    ],
+    "version": 4
+}
