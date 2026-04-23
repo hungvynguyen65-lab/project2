@@ -1,21 +1,23 @@
 #include "game.h"
+#include "sdl_ui.h"
+#include "terminal_ui.h"
 
-#include <stdio.h>
+#include <string.h>
 
-int main(void) {
+int main(int argc, char *argv[]) {
     GameState game;
-    char input[INPUT_BUFFER_SIZE];
+    int exit_code = 0;
 
     game_init(&game);
 
-    while (game.running) {
-        game_render(&game);
-        if (fgets(input, sizeof(input), stdin) == NULL) {
-            break;
-        }
-        game_handle_command(&game, input);
+    if (argc > 1 && strcmp(argv[1], "--gui") == 0) {
+        bool smoke_test = argc > 2 && strcmp(argv[2], "--smoke-test") == 0;
+        exit_code = sdl_run(&game, smoke_test);
+    } else {
+        terminal_run(&game);
     }
 
     game_destroy(&game);
-    return 0;
+
+    return exit_code;
 }

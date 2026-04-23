@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/src",
+                "${workspaceFolder}/third_party/SDL3-3.2.24/include",
                 "C:/Users/jonas/AppData/Local/Programs/Python/Python313/Lib/site-packages/ziglang/lib/include",
                 "C:/Users/jonas/AppData/Local/Programs/Python/Python313/Lib/site-packages/ziglang/lib/libc/include/any-windows-any"
             ],

@@ -1,2 +1,7 @@
 build/
 .zig-cache-global/
+third_party/*.zip
+valid_deck.txt
+invalid_deck.txt
+cards.txt
+out.txt
