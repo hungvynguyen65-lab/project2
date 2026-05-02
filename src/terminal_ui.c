@@ -14,6 +14,7 @@ static void trim_newline(char *text) {
 void terminal_render(const GameState *game) {
     int row;
 
+    /* Print the tableau row by row, with foundations shown on every second row. */
     printf("C1\tC2\tC3\tC4\tC5\tC6\tC7\n");
 
     for (row = 0; row < TABLEAU_MAX_ROWS; row++) {
@@ -54,6 +55,7 @@ void terminal_render(const GameState *game) {
 void terminal_handle_command(GameState *game, const char *input) {
     char command[INPUT_BUFFER_SIZE];
 
+    /* Normalize the input line before passing it to the shared game command handler. */
     snprintf(command, sizeof(command), "%s", input);
     trim_newline(command);
     game_execute_command(game, command);
@@ -62,6 +64,7 @@ void terminal_handle_command(GameState *game, const char *input) {
 void terminal_run(GameState *game) {
     char input[INPUT_BUFFER_SIZE];
 
+    /* Re-render after each command until the shared game state requests exit. */
     while (game->running) {
         terminal_render(game);
         if (fgets(input, sizeof(input), stdin) == NULL) {

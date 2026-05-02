@@ -17,10 +17,18 @@
 #define FOUNDATION_Y 28.0f
 #define FOUNDATION_GAP 96.0f
 
+typedef enum {
+    PROMPT_NONE,
+    PROMPT_LOAD,
+    PROMPT_SAVE,
+    PROMPT_SPLIT
+} GuiPromptType;
+
 typedef struct {
     SDL_FRect rect;
     const char *label;
     const char *command;
+    GuiPromptType prompt_type;
 } GuiButton;
 
 typedef struct {
@@ -31,13 +39,6 @@ typedef struct {
     char source_text[12];
 } GuiSelection;
 
-typedef enum {
-    PROMPT_NONE,
-    PROMPT_LOAD,
-    PROMPT_SAVE,
-    PROMPT_SPLIT
-} GuiPromptType;
-
 typedef struct {
     bool active;
     GuiPromptType type;
@@ -45,114 +46,80 @@ typedef struct {
 } GuiPrompt;
 
 static const GuiButton BUTTONS[] = {
-    {{34.0f, 32.0f, 96.0f, 38.0f}, "LD", "LD"},
-    {{146.0f, 32.0f, 96.0f, 38.0f}, "SW", "SW"},
-    {{258.0f, 32.0f, 96.0f, 38.0f}, "SI", "SI"},
-    {{370.0f, 32.0f, 96.0f, 38.0f}, "SR", "SR"},
-    {{34.0f, 82.0f, 96.0f, 38.0f}, "SD", "SD"},
-    {{146.0f, 82.0f, 96.0f, 38.0f}, "P", "P"},
-    {{258.0f, 82.0f, 96.0f, 38.0f}, "Q", "Q"},
-    {{370.0f, 82.0f, 96.0f, 38.0f}, "QQ", "QQ"}
+    {{34.0f, 32.0f, 96.0f, 38.0f}, "LD", "LD", PROMPT_LOAD},
+    {{146.0f, 32.0f, 96.0f, 38.0f}, "SW", "SW", PROMPT_NONE},
+    {{258.0f, 32.0f, 96.0f, 38.0f}, "SI", "SI", PROMPT_SPLIT},
+    {{370.0f, 32.0f, 96.0f, 38.0f}, "SR", "SR", PROMPT_NONE},
+    {{34.0f, 82.0f, 96.0f, 38.0f}, "SD", "SD", PROMPT_SAVE},
+    {{146.0f, 82.0f, 96.0f, 38.0f}, "P", "P", PROMPT_NONE},
+    {{258.0f, 82.0f, 96.0f, 38.0f}, "Q", "Q", PROMPT_NONE},
+    {{370.0f, 82.0f, 96.0f, 38.0f}, "QQ", "QQ", PROMPT_NONE}
 };
 
-static const unsigned char FONT_SPACE[7] = {0, 0, 0, 0, 0, 0, 0};
-static const unsigned char FONT_0[7] = {14, 17, 19, 21, 25, 17, 14};
-static const unsigned char FONT_1[7] = {4, 12, 4, 4, 4, 4, 14};
-static const unsigned char FONT_2[7] = {14, 17, 1, 2, 4, 8, 31};
-static const unsigned char FONT_3[7] = {30, 1, 1, 14, 1, 1, 30};
-static const unsigned char FONT_4[7] = {2, 6, 10, 18, 31, 2, 2};
-static const unsigned char FONT_5[7] = {31, 16, 30, 1, 1, 17, 14};
-static const unsigned char FONT_6[7] = {6, 8, 16, 30, 17, 17, 14};
-static const unsigned char FONT_7[7] = {31, 1, 2, 4, 8, 8, 8};
-static const unsigned char FONT_8[7] = {14, 17, 17, 14, 17, 17, 14};
-static const unsigned char FONT_9[7] = {14, 17, 17, 15, 1, 2, 12};
-static const unsigned char FONT_A[7] = {14, 17, 17, 31, 17, 17, 17};
-static const unsigned char FONT_B[7] = {30, 17, 17, 30, 17, 17, 30};
-static const unsigned char FONT_C[7] = {14, 17, 16, 16, 16, 17, 14};
-static const unsigned char FONT_D[7] = {30, 17, 17, 17, 17, 17, 30};
-static const unsigned char FONT_E[7] = {31, 16, 16, 30, 16, 16, 31};
-static const unsigned char FONT_F[7] = {31, 16, 16, 30, 16, 16, 16};
-static const unsigned char FONT_G[7] = {14, 17, 16, 23, 17, 17, 15};
-static const unsigned char FONT_H[7] = {17, 17, 17, 31, 17, 17, 17};
-static const unsigned char FONT_I[7] = {14, 4, 4, 4, 4, 4, 14};
-static const unsigned char FONT_J[7] = {7, 2, 2, 2, 18, 18, 12};
-static const unsigned char FONT_K[7] = {17, 18, 20, 24, 20, 18, 17};
-static const unsigned char FONT_L[7] = {16, 16, 16, 16, 16, 16, 31};
-static const unsigned char FONT_M[7] = {17, 27, 21, 21, 17, 17, 17};
-static const unsigned char FONT_N[7] = {17, 25, 21, 19, 17, 17, 17};
-static const unsigned char FONT_O[7] = {14, 17, 17, 17, 17, 17, 14};
-static const unsigned char FONT_P[7] = {30, 17, 17, 30, 16, 16, 16};
-static const unsigned char FONT_Q[7] = {14, 17, 17, 17, 21, 18, 13};
-static const unsigned char FONT_R[7] = {30, 17, 17, 30, 20, 18, 17};
-static const unsigned char FONT_S[7] = {15, 16, 16, 14, 1, 1, 30};
-static const unsigned char FONT_T[7] = {31, 4, 4, 4, 4, 4, 4};
-static const unsigned char FONT_U[7] = {17, 17, 17, 17, 17, 17, 14};
-static const unsigned char FONT_V[7] = {17, 17, 17, 17, 17, 10, 4};
-static const unsigned char FONT_W[7] = {17, 17, 17, 21, 21, 21, 10};
-static const unsigned char FONT_X[7] = {17, 17, 10, 4, 10, 17, 17};
-static const unsigned char FONT_Y[7] = {17, 17, 10, 4, 4, 4, 4};
-static const unsigned char FONT_Z[7] = {31, 1, 2, 4, 8, 16, 31};
-static const unsigned char FONT_LBRACKET[7] = {14, 8, 8, 8, 8, 8, 14};
-static const unsigned char FONT_RBRACKET[7] = {14, 2, 2, 2, 2, 2, 14};
-static const unsigned char FONT_COLON[7] = {0, 4, 4, 0, 4, 4, 0};
-static const unsigned char FONT_DASH[7] = {0, 0, 0, 31, 0, 0, 0};
-static const unsigned char FONT_DOT[7] = {0, 0, 0, 0, 0, 12, 12};
-static const unsigned char FONT_UNDERSCORE[7] = {0, 0, 0, 0, 0, 0, 31};
-static const unsigned char FONT_SLASH[7] = {1, 2, 4, 8, 16, 0, 0};
-static const unsigned char FONT_BACKSLASH[7] = {16, 8, 4, 2, 1, 0, 0};
+typedef struct {
+    GuiPromptType type;
+    const char *title;
+    const char *primary_hint;
+    const char *secondary_hint;
+    const char *command;
+} PromptInfo;
+
+static const PromptInfo PROMPTS[] = {
+    {PROMPT_LOAD, "LOAD DECK", "TYPE A FILE NAME", "OR LEAVE EMPTY FOR DEFAULT", "LD"},
+    {PROMPT_SAVE, "SAVE DECK", "TYPE A FILE NAME", "OR LEAVE EMPTY FOR CARDS.TXT", "SD"},
+    {PROMPT_SPLIT, "INTERLEAVE SPLIT", "TYPE A SPLIT NUMBER", "OR LEAVE EMPTY FOR RANDOM", "SI"}
+};
+
+static const unsigned char FONT[][7] = {
+    {0, 0, 0, 0, 0, 0, 0},
+    {14, 17, 19, 21, 25, 17, 14}, {4, 12, 4, 4, 4, 4, 14},
+    {14, 17, 1, 2, 4, 8, 31}, {30, 1, 1, 14, 1, 1, 30},
+    {2, 6, 10, 18, 31, 2, 2}, {31, 16, 30, 1, 1, 17, 14},
+    {6, 8, 16, 30, 17, 17, 14}, {31, 1, 2, 4, 8, 8, 8},
+    {14, 17, 17, 14, 17, 17, 14}, {14, 17, 17, 15, 1, 2, 12},
+    {14, 17, 17, 31, 17, 17, 17}, {30, 17, 17, 30, 17, 17, 30},
+    {14, 17, 16, 16, 16, 17, 14}, {30, 17, 17, 17, 17, 17, 30},
+    {31, 16, 16, 30, 16, 16, 31}, {31, 16, 16, 30, 16, 16, 16},
+    {14, 17, 16, 23, 17, 17, 15}, {17, 17, 17, 31, 17, 17, 17},
+    {14, 4, 4, 4, 4, 4, 14}, {7, 2, 2, 2, 18, 18, 12},
+    {17, 18, 20, 24, 20, 18, 17}, {16, 16, 16, 16, 16, 16, 31},
+    {17, 27, 21, 21, 17, 17, 17}, {17, 25, 21, 19, 17, 17, 17},
+    {14, 17, 17, 17, 17, 17, 14}, {30, 17, 17, 30, 16, 16, 16},
+    {14, 17, 17, 17, 21, 18, 13}, {30, 17, 17, 30, 20, 18, 17},
+    {15, 16, 16, 14, 1, 1, 30}, {31, 4, 4, 4, 4, 4, 4},
+    {17, 17, 17, 17, 17, 17, 14}, {17, 17, 17, 17, 17, 10, 4},
+    {17, 17, 17, 21, 21, 21, 10}, {17, 17, 10, 4, 10, 17, 17},
+    {17, 17, 10, 4, 4, 4, 4}, {31, 1, 2, 4, 8, 16, 31},
+    {14, 8, 8, 8, 8, 8, 14}, {14, 2, 2, 2, 2, 2, 14},
+    {0, 4, 4, 0, 4, 4, 0}, {0, 0, 0, 31, 0, 0, 0},
+    {0, 0, 0, 0, 0, 12, 12}, {0, 0, 0, 0, 0, 0, 31},
+    {1, 2, 4, 8, 16, 0, 0}, {16, 8, 4, 2, 1, 0, 0}
+};
 
 static const unsigned char *glyph_for(char c) {
+    /* Map ASCII characters to the small built-in bitmap font. */
     if (c >= 'a' && c <= 'z') {
         c = (char)(c - 'a' + 'A');
     }
 
+    if (c >= '0' && c <= '9') {
+        return FONT[1 + c - '0'];
+    }
+
+    if (c >= 'A' && c <= 'Z') {
+        return FONT[11 + c - 'A'];
+    }
+
     switch (c) {
-        case '0': return FONT_0;
-        case '1': return FONT_1;
-        case '2': return FONT_2;
-        case '3': return FONT_3;
-        case '4': return FONT_4;
-        case '5': return FONT_5;
-        case '6': return FONT_6;
-        case '7': return FONT_7;
-        case '8': return FONT_8;
-        case '9': return FONT_9;
-        case 'A': return FONT_A;
-        case 'B': return FONT_B;
-        case 'C': return FONT_C;
-        case 'D': return FONT_D;
-        case 'E': return FONT_E;
-        case 'F': return FONT_F;
-        case 'G': return FONT_G;
-        case 'H': return FONT_H;
-        case 'I': return FONT_I;
-        case 'J': return FONT_J;
-        case 'K': return FONT_K;
-        case 'L': return FONT_L;
-        case 'M': return FONT_M;
-        case 'N': return FONT_N;
-        case 'O': return FONT_O;
-        case 'P': return FONT_P;
-        case 'Q': return FONT_Q;
-        case 'R': return FONT_R;
-        case 'S': return FONT_S;
-        case 'T': return FONT_T;
-        case 'U': return FONT_U;
-        case 'V': return FONT_V;
-        case 'W': return FONT_W;
-        case 'X': return FONT_X;
-        case 'Y': return FONT_Y;
-        case 'Z': return FONT_Z;
-        case '[': return FONT_LBRACKET;
-        case ']': return FONT_RBRACKET;
-        case ':': return FONT_COLON;
-        case '-': return FONT_DASH;
-        case '.': return FONT_DOT;
-        case '_': return FONT_UNDERSCORE;
-        case '/': return FONT_SLASH;
-        case '\\': return FONT_BACKSLASH;
-        case ' ': return FONT_SPACE;
-        default: return FONT_SPACE;
+        case '[': return FONT[37];
+        case ']': return FONT[38];
+        case ':': return FONT[39];
+        case '-': return FONT[40];
+        case '.': return FONT[41];
+        case '_': return FONT[42];
+        case '/': return FONT[43];
+        case '\\': return FONT[44];
+        default: return FONT[0];
     }
 }
 
@@ -163,6 +130,7 @@ static void set_color(SDL_Renderer *renderer, Uint8 r, Uint8 g, Uint8 b) {
 static void draw_text(SDL_Renderer *renderer, const char *text, float x, float y, float scale) {
     size_t index;
 
+    /* Draw text one filled rectangle at a time from 5x7 glyph bitmaps. */
     for (index = 0; text[index] != '\0'; index++) {
         const unsigned char *glyph = glyph_for(text[index]);
         int row;
@@ -214,58 +182,24 @@ static void draw_pattern(SDL_Renderer *renderer, const char *const *pattern, int
 }
 
 static void draw_suit_icon(SDL_Renderer *renderer, char suit, float x, float y, float scale) {
-    static const char *const HEART[] = {
-        "0110110",
-        "1111111",
-        "1111111",
-        "1111111",
-        "0111110",
-        "0011100",
-        "0001000"
+    static const struct {
+        char suit;
+        const char *pattern[7];
+    } patterns[] = {
+        {'H', {"0110110", "1111111", "1111111", "1111111", "0111110", "0011100", "0001000"}},
+        {'D', {"0001000", "0011100", "0111110", "1111111", "0111110", "0011100", "0001000"}},
+        {'C', {"0001000", "0011100", "0011100", "1111111", "1111111", "0011100", "0011100"}},
+        {'S', {"0001000", "0011100", "0111110", "1111111", "0011100", "0111110", "0011100"}}
     };
-    static const char *const DIAMOND[] = {
-        "0001000",
-        "0011100",
-        "0111110",
-        "1111111",
-        "0111110",
-        "0011100",
-        "0001000"
-    };
-    static const char *const CLUB[] = {
-        "0001000",
-        "0011100",
-        "0011100",
-        "1111111",
-        "1111111",
-        "0011100",
-        "0011100"
-    };
-    static const char *const SPADE[] = {
-        "0001000",
-        "0011100",
-        "0111110",
-        "1111111",
-        "0011100",
-        "0111110",
-        "0011100"
-    };
-    const char *const *pattern = SPADE;
+    const char *const *pattern = patterns[3].pattern;
+    size_t i;
 
-    switch (suit) {
-        case 'H':
-            pattern = HEART;
+    /* Pick the simple bitmap pattern that matches the card suit. */
+    for (i = 0; i < sizeof(patterns) / sizeof(patterns[0]); i++) {
+        if (patterns[i].suit == suit) {
+            pattern = patterns[i].pattern;
             break;
-        case 'D':
-            pattern = DIAMOND;
-            break;
-        case 'C':
-            pattern = CLUB;
-            break;
-        case 'S':
-        default:
-            pattern = SPADE;
-            break;
+        }
     }
 
     draw_pattern(renderer, pattern, 7, x, y, scale);
@@ -300,6 +234,7 @@ static void draw_card(SDL_Renderer *renderer, const Card *card, float x, float y
     SDL_FRect rect = {x, y, CARD_WIDTH, CARD_HEIGHT};
     SDL_FRect shadow = {x + 2.0f, y + 3.0f, CARD_WIDTH, CARD_HEIGHT};
 
+    /* Empty slots, hidden cards, and visible cards each have a distinct drawing path. */
     if (card == NULL) {
         set_color(renderer, 18, 74, 48);
         SDL_RenderFillRect(renderer, &rect);
@@ -405,69 +340,32 @@ static SDL_FRect prompt_cancel_rect(void) {
     return rect;
 }
 
-static const char *prompt_title(const GuiPrompt *prompt) {
-    switch (prompt->type) {
-        case PROMPT_LOAD: return "LOAD DECK";
-        case PROMPT_SAVE: return "SAVE DECK";
-        case PROMPT_SPLIT: return "INTERLEAVE SPLIT";
-        default: return "";
-    }
-}
+static const PromptInfo *prompt_info(GuiPromptType type) {
+    size_t i;
 
-static const char *prompt_hint_primary(const GuiPrompt *prompt) {
-    switch (prompt->type) {
-        case PROMPT_LOAD: return "TYPE A FILE NAME";
-        case PROMPT_SAVE: return "TYPE A FILE NAME";
-        case PROMPT_SPLIT: return "TYPE A SPLIT NUMBER";
-        default: return "";
+    for (i = 0; i < sizeof(PROMPTS) / sizeof(PROMPTS[0]); i++) {
+        if (PROMPTS[i].type == type) {
+            return &PROMPTS[i];
+        }
     }
-}
 
-static const char *prompt_hint_secondary(const GuiPrompt *prompt) {
-    switch (prompt->type) {
-        case PROMPT_LOAD: return "OR LEAVE EMPTY FOR DEFAULT";
-        case PROMPT_SAVE: return "OR LEAVE EMPTY FOR CARDS.TXT";
-        case PROMPT_SPLIT: return "OR LEAVE EMPTY FOR RANDOM";
-        default: return "";
-    }
-}
-
-static void run_gui_command(GameState *game, const char *command) {
-    game_execute_command(game, command);
+    return NULL;
 }
 
 static void submit_prompt(GameState *game, GuiSelection *selection, GuiPrompt *prompt) {
+    const PromptInfo *info = prompt_info(prompt->type);
     char command[COMMAND_SIZE];
 
+    /* Turn prompt input into the same command strings used by the terminal UI. */
     clear_selection(selection);
 
-    switch (prompt->type) {
-        case PROMPT_LOAD:
-            if (prompt->text[0] == '\0') {
-                run_gui_command(game, "LD");
-            } else {
-                snprintf(command, sizeof(command), "LD %s", prompt->text);
-                run_gui_command(game, command);
-            }
-            break;
-        case PROMPT_SAVE:
-            if (prompt->text[0] == '\0') {
-                run_gui_command(game, "SD");
-            } else {
-                snprintf(command, sizeof(command), "SD %s", prompt->text);
-                run_gui_command(game, command);
-            }
-            break;
-        case PROMPT_SPLIT:
-            if (prompt->text[0] == '\0') {
-                run_gui_command(game, "SI");
-            } else {
-                snprintf(command, sizeof(command), "SI %s", prompt->text);
-                run_gui_command(game, command);
-            }
-            break;
-        default:
-            break;
+    if (info != NULL) {
+        if (prompt->text[0] == '\0') {
+            game_execute_command(game, info->command);
+        } else {
+            snprintf(command, sizeof(command), "%s %s", info->command, prompt->text);
+            game_execute_command(game, command);
+        }
     }
 
     clear_prompt(prompt);
@@ -516,6 +414,7 @@ static void handle_prompt_key(GameState *game, GuiSelection *selection, GuiPromp
 static bool handle_button_click(GameState *game, GuiSelection *selection, GuiPrompt *prompt, float x, float y) {
     size_t i;
 
+    /* Buttons either open a prompt for arguments or execute a command directly. */
     if (prompt->active) {
         SDL_FRect ok_rect = prompt_ok_rect();
         SDL_FRect cancel_rect = prompt_cancel_rect();
@@ -531,14 +430,10 @@ static bool handle_button_click(GameState *game, GuiSelection *selection, GuiPro
     for (i = 0; i < sizeof(BUTTONS) / sizeof(BUTTONS[0]); i++) {
         if (point_in_rect(x, y, &BUTTONS[i].rect)) {
             clear_selection(selection);
-            if (strcmp(BUTTONS[i].command, "LD") == 0) {
-                open_prompt(prompt, PROMPT_LOAD);
-            } else if (strcmp(BUTTONS[i].command, "SD") == 0) {
-                open_prompt(prompt, PROMPT_SAVE);
-            } else if (strcmp(BUTTONS[i].command, "SI") == 0) {
-                open_prompt(prompt, PROMPT_SPLIT);
+            if (BUTTONS[i].prompt_type != PROMPT_NONE) {
+                open_prompt(prompt, BUTTONS[i].prompt_type);
             } else {
-                run_gui_command(game, BUTTONS[i].command);
+                game_execute_command(game, BUTTONS[i].command);
             }
             return true;
         }
@@ -669,6 +564,7 @@ static void handle_game_click(GameState *game, GuiSelection *selection, float x,
     int foundation;
     char dest_text[8];
 
+    /* First click selects a source; second click attempts a legal move target. */
     if (selection->active) {
         if (hit_foundation(x, y, &foundation)) {
             snprintf(dest_text, sizeof(dest_text), "F%d", foundation + 1);
@@ -698,6 +594,7 @@ static void handle_game_click(GameState *game, GuiSelection *selection, float x,
 }
 
 static void draw_prompt(SDL_Renderer *renderer, const GuiPrompt *prompt) {
+    const PromptInfo *info = prompt_info(prompt->type);
     SDL_FRect overlay = {0.0f, 0.0f, (float)WINDOW_WIDTH, (float)WINDOW_HEIGHT};
     SDL_FRect panel = prompt_panel_rect();
     SDL_FRect input = prompt_input_rect();
@@ -726,9 +623,9 @@ static void draw_prompt(SDL_Renderer *renderer, const GuiPrompt *prompt) {
     SDL_RenderRect(renderer, &ok_rect);
     SDL_RenderRect(renderer, &cancel_rect);
 
-    draw_label(renderer, prompt_title(prompt), panel.x + 30.0f, panel.y + 24.0f);
-    draw_label(renderer, prompt_hint_primary(prompt), panel.x + 30.0f, panel.y + 68.0f);
-    draw_label(renderer, prompt_hint_secondary(prompt), panel.x + 30.0f, panel.y + 108.0f);
+    draw_label(renderer, info != NULL ? info->title : "", panel.x + 30.0f, panel.y + 24.0f);
+    draw_label(renderer, info != NULL ? info->primary_hint : "", panel.x + 30.0f, panel.y + 68.0f);
+    draw_label(renderer, info != NULL ? info->secondary_hint : "", panel.x + 30.0f, panel.y + 108.0f);
     draw_text(
         renderer,
         prompt->text[0] != '\0' ? prompt->text : "TYPE HERE",
@@ -749,6 +646,7 @@ static void render_game(SDL_Renderer *renderer, const GameState *game, const Gui
     SDL_FRect tableau_panel = {20.0f, 158.0f, 886.0f, 718.0f};
     SDL_FRect status_panel = {926.0f, 676.0f, 408.0f, 200.0f};
 
+    /* Render the complete current state: controls, foundations, tableau, and status. */
     set_color(renderer, 13, 66, 42);
     SDL_RenderClear(renderer);
 
@@ -847,6 +745,7 @@ int sdl_run(GameState *game, bool smoke_test) {
     clear_selection(&selection);
     clear_prompt(&prompt);
 
+    /* Main SDL setup and event loop for the graphical version. */
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
         return 1;

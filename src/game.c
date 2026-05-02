@@ -143,67 +143,30 @@ static void clear_tableau(GameState *game) {
     }
 }
 
-static int total_column_cards(void) {
-    int total = 0;
-    int i;
-
-    for (i = 0; i < COLUMN_COUNT; i++) {
-        total += COLUMN_LENGTHS[i];
-    }
-
-    return total;
-}
-
-static int row_target_column(int row, int position_in_row) {
-    int col;
-    int seen = 0;
-
-    for (col = 0; col < COLUMN_COUNT; col++) {
-        if (row < COLUMN_LENGTHS[col]) {
-            if (seen == position_in_row) {
-                return col;
-            }
-            seen++;
-        }
-    }
-
-    return -1;
-}
-
 static void rebuild_columns_from_deck(GameState *game, bool play_visibility) {
     CardNode *deck_node = game->deck.head;
     int row;
-    int total = total_column_cards();
-    int dealt = 0;
 
     clear_tableau(game);
 
-    for (row = 0; deck_node != NULL && dealt < total; row++) {
-        int cards_this_row = 0;
+    /* Deal the stored deck into the seven Yukon columns row by row. */
+    for (row = 0; deck_node != NULL && row < TABLEAU_MAX_ROWS; row++) {
         int col;
 
-        for (col = 0; col < COLUMN_COUNT; col++) {
-            if (row < COLUMN_LENGTHS[col]) {
-                cards_this_row++;
+        for (col = 0; col < COLUMN_COUNT && deck_node != NULL; col++) {
+            if (row >= COLUMN_LENGTHS[col]) {
+                continue;
             }
-        }
 
-        for (col = 0; col < cards_this_row && deck_node != NULL; col++) {
-            int target = row_target_column(row, col);
             Card card = deck_node->card;
-
             if (play_visibility) {
-                card.visible = row >= target;
+                card.visible = row >= col;
             } else {
                 card.visible = false;
             }
 
-            if (target >= 0) {
-                append_card(&game->columns[target], card);
-            }
-
+            append_card(&game->columns[col], card);
             deck_node = deck_node->next;
-            dealt++;
         }
     }
 }
@@ -286,6 +249,7 @@ void game_load_default_deck(GameState *game) {
 
     clear_all(game);
 
+    /* Build the ordered deck: all clubs, then diamonds, hearts, and spades. */
     for (suit_index = 0; suit_index < 4; suit_index++) {
         for (rank_index = 0; rank_index < 13; rank_index++) {
             Card card;
@@ -318,6 +282,7 @@ void game_load_deck_file(GameState *game, const char *filename) {
         return;
     }
 
+    /* Validate each input line while tracking duplicates in rank/suit slots. */
     while (fgets(line, sizeof(line), file) != NULL) {
         Card card;
         int r;
@@ -434,6 +399,7 @@ void game_shuffle_interleave(GameState *game, int split) {
     init_list(&second);
     init_list(&shuffled);
 
+    /* Split the deck, then alternately move cards from each pile. */
     for (i = 0; i < split; i++) {
         append_node(&first, pop_front(&game->deck));
     }
@@ -471,6 +437,7 @@ void game_shuffle_random(GameState *game) {
 
     init_list(&shuffled);
 
+    /* Insert each card into a random position in the new shuffled pile. */
     while (game->deck.count > 0) {
         CardNode *node = pop_front(&game->deck);
         int position = shuffled.count == 0 ? 0 : rand() % (shuffled.count + 1);
@@ -489,6 +456,7 @@ void game_start(GameState *game) {
         return;
     }
 
+    /* Re-deal from the saved deck and apply the initial Yukon visibility. */
     rebuild_columns_from_deck(game, true);
     game->phase = PHASE_PLAY;
     update_win_state(game);
@@ -532,27 +500,12 @@ static CardNode *mutable_node_at(CardList *list, int index) {
 }
 
 static int rank_value(char rank) {
-    int i;
-
-    for (i = 0; i < 13; i++) {
-        if (RANKS[i] == rank) {
-            return i + 1;
-        }
-    }
-
-    return 0;
+    int index = rank_index(rank);
+    return index >= 0 ? index + 1 : 0;
 }
 
 static bool is_valid_suit(char suit) {
-    int i;
-
-    for (i = 0; i < 4; i++) {
-        if (SUITS[i] == suit) {
-            return true;
-        }
-    }
-
-    return false;
+    return suit_index(suit) >= 0;
 }
 
 static int find_visible_card_index(const CardList *list, char rank, char suit) {
@@ -751,6 +704,21 @@ static const char *skip_spaces(const char *text) {
     return text;
 }
 
+static bool command_starts_with_arg(const char *command, const char *name) {
+    size_t length = strlen(name);
+    return strncmp(command, name, length) == 0 &&
+        (command[length] == '\0' || command[length] == ' ' || command[length] == '\t');
+}
+
+static bool reject_play_phase_command(GameState *game) {
+    if (game->phase != PHASE_PLAY) {
+        return false;
+    }
+
+    game_set_message(game, "Command not available in the PLAY phase.");
+    return true;
+}
+
 static bool resolve_move_source(
     const GameState *game,
     MoveSource source,
@@ -758,6 +726,7 @@ static bool resolve_move_source(
     int *source_row,
     const Card **moving_card
 ) {
+    /* Convert a parsed source like C6:4H or F3 into the actual list and card. */
     if (source.type == MOVE_SOURCE_COLUMN) {
         *source_list = &game->columns[source.index];
         if ((*source_list)->count == 0) {
@@ -796,6 +765,7 @@ static bool validate_move_destination(
 ) {
     const CardList *dest_list;
 
+    /* Columns accept movable piles; foundations only accept bottom column cards. */
     if (dest.type == MOVE_DEST_COLUMN) {
         dest_list = &game->columns[dest.index];
         return can_place_on_column(moving_card, dest_list);
@@ -841,6 +811,7 @@ bool game_move_command(GameState *game, const char *command) {
         return false;
     }
 
+    /* Parse, validate, detach the source segment, and append it to the destination. */
     snprintf(buffer, sizeof(buffer), "%s", command);
     arrow = strstr(buffer, "->");
     if (arrow == NULL) {
@@ -897,59 +868,52 @@ bool game_move_command(GameState *game, const char *command) {
     return true;
 }
 
-bool game_can_move_from_column_to_column(const GameState *game, int source_column, int source_row, int dest_column) {
-    const Card *card = game_column_card_at(game, source_column, source_row);
+static MoveSource column_source_for_card(const Card *card, int column) {
     MoveSource source;
-    MoveDest dest;
-
-    if (card == NULL) {
-        return false;
-    }
-
     source.type = MOVE_SOURCE_COLUMN;
-    source.index = source_column;
+    source.index = column;
     source.has_card = true;
     source.rank = card->rank;
     source.suit = card->suit;
-
-    dest.type = MOVE_DEST_COLUMN;
-    dest.index = dest_column;
-    return can_move_from_source(game, source, dest);
+    return source;
 }
 
-bool game_can_move_from_column_to_foundation(const GameState *game, int source_column, int source_row, int foundation) {
-    const Card *card = game_column_card_at(game, source_column, source_row);
+static MoveSource foundation_source(int foundation) {
     MoveSource source;
-    MoveDest dest;
-
-    if (card == NULL) {
-        return false;
-    }
-
-    source.type = MOVE_SOURCE_COLUMN;
-    source.index = source_column;
-    source.has_card = true;
-    source.rank = card->rank;
-    source.suit = card->suit;
-
-    dest.type = MOVE_DEST_FOUNDATION;
-    dest.index = foundation;
-    return can_move_from_source(game, source, dest);
-}
-
-bool game_can_move_from_foundation_to_column(const GameState *game, int foundation, int dest_column) {
-    MoveSource source;
-    MoveDest dest;
-
     source.type = MOVE_SOURCE_FOUNDATION;
     source.index = foundation;
     source.has_card = false;
     source.rank = '\0';
     source.suit = '\0';
+    return source;
+}
 
+static MoveDest column_dest(int column) {
+    MoveDest dest;
     dest.type = MOVE_DEST_COLUMN;
-    dest.index = dest_column;
-    return can_move_from_source(game, source, dest);
+    dest.index = column;
+    return dest;
+}
+
+static MoveDest foundation_dest(int foundation) {
+    MoveDest dest;
+    dest.type = MOVE_DEST_FOUNDATION;
+    dest.index = foundation;
+    return dest;
+}
+
+bool game_can_move_from_column_to_column(const GameState *game, int source_column, int source_row, int dest_column) {
+    const Card *card = game_column_card_at(game, source_column, source_row);
+    return card != NULL && can_move_from_source(game, column_source_for_card(card, source_column), column_dest(dest_column));
+}
+
+bool game_can_move_from_column_to_foundation(const GameState *game, int source_column, int source_row, int foundation) {
+    const Card *card = game_column_card_at(game, source_column, source_row);
+    return card != NULL && can_move_from_source(game, column_source_for_card(card, source_column), foundation_dest(foundation));
+}
+
+bool game_can_move_from_foundation_to_column(const GameState *game, int foundation, int dest_column) {
+    return can_move_from_source(game, foundation_source(foundation), column_dest(dest_column));
 }
 
 void game_execute_command(GameState *game, const char *command) {
@@ -957,52 +921,37 @@ void game_execute_command(GameState *game, const char *command) {
 
     game_set_last_command(game, command);
 
+    /* Central command dispatcher used by both the terminal UI and SDL UI. */
     if (strcmp(command, "QQ") == 0) {
         game_request_quit(game);
         return;
     }
 
-    if (strncmp(command, "LD", 2) == 0 && (command[2] == '\0' || command[2] == ' ' || command[2] == '\t')) {
-        if (game->phase == PHASE_PLAY) {
-            game_set_message(game, "Command not available in the PLAY phase.");
-        } else {
+    if (command_starts_with_arg(command, "LD")) {
+        if (!reject_play_phase_command(game)) {
             arg = skip_spaces(command + 2);
-            if (*arg == '\0') {
-                game_load_default_deck(game);
-            } else {
-                game_load_deck_file(game, arg);
-            }
+            *arg == '\0' ? game_load_default_deck(game) : game_load_deck_file(game, arg);
         }
         return;
     }
 
     if (strcmp(command, "SW") == 0) {
-        if (game->phase == PHASE_PLAY) {
-            game_set_message(game, "Command not available in the PLAY phase.");
-        } else {
+        if (!reject_play_phase_command(game)) {
             game_show_deck(game);
         }
         return;
     }
 
-    if (strncmp(command, "SD", 2) == 0 && (command[2] == '\0' || command[2] == ' ' || command[2] == '\t')) {
-        if (game->phase == PHASE_PLAY) {
-            game_set_message(game, "Command not available in the PLAY phase.");
-        } else {
+    if (command_starts_with_arg(command, "SD")) {
+        if (!reject_play_phase_command(game)) {
             arg = skip_spaces(command + 2);
-            if (*arg == '\0') {
-                game_save_deck_file(game, "cards.txt");
-            } else {
-                game_save_deck_file(game, arg);
-            }
+            game_save_deck_file(game, *arg == '\0' ? "cards.txt" : arg);
         }
         return;
     }
 
-    if (strncmp(command, "SI", 2) == 0 && (command[2] == '\0' || command[2] == ' ' || command[2] == '\t')) {
-        if (game->phase == PHASE_PLAY) {
-            game_set_message(game, "Command not available in the PLAY phase.");
-        } else {
+    if (command_starts_with_arg(command, "SI")) {
+        if (!reject_play_phase_command(game)) {
             arg = skip_spaces(command + 2);
             if (*arg == '\0') {
                 int split = game->deck.count > 1 ? 1 + rand() % (game->deck.count - 1) : 0;
@@ -1021,9 +970,7 @@ void game_execute_command(GameState *game, const char *command) {
     }
 
     if (strcmp(command, "SR") == 0) {
-        if (game->phase == PHASE_PLAY) {
-            game_set_message(game, "Command not available in the PLAY phase.");
-        } else {
+        if (!reject_play_phase_command(game)) {
             game_shuffle_random(game);
         }
         return;
