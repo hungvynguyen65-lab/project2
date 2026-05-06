@@ -626,6 +626,7 @@ static void draw_prompt(SDL_Renderer *renderer, const GuiPrompt *prompt) {
     draw_label(renderer, info != NULL ? info->title : "", panel.x + 30.0f, panel.y + 24.0f);
     draw_label(renderer, info != NULL ? info->primary_hint : "", panel.x + 30.0f, panel.y + 68.0f);
     draw_label(renderer, info != NULL ? info->secondary_hint : "", panel.x + 30.0f, panel.y + 108.0f);
+    set_color(renderer, 54, 42, 25);
     draw_text(
         renderer,
         prompt->text[0] != '\0' ? prompt->text : "TYPE HERE",
@@ -633,6 +634,7 @@ static void draw_prompt(SDL_Renderer *renderer, const GuiPrompt *prompt) {
         input.y + 10.0f,
         3.0f
     );
+    set_color(renderer, 236, 230, 215);
     draw_text(renderer, "OK", ok_rect.x + 54.0f, ok_rect.y + 9.0f, 3.0f);
     draw_text(renderer, "CANCEL", cancel_rect.x + 20.0f, cancel_rect.y + 9.0f, 3.0f);
 }
