@@ -21,7 +21,23 @@ static void clear_tableau(GameState *game) {
     }
 }
 
-static void rebuild_columns_from_deck(GameState *game, bool play_visibility) {
+static void rebuild_startup_columns_from_deck(GameState *game, bool visible) {
+    CardNode *deck_node = game->deck.head;
+    int col = 0;
+
+    clear_tableau(game);
+
+    /* Display the raw deck order across the seven startup columns. */
+    while (deck_node != NULL) {
+        Card card = deck_node->card;
+        card.visible = visible;
+        card_list_append_card(&game->columns[col], card);
+        col = (col + 1) % COLUMN_COUNT;
+        deck_node = deck_node->next;
+    }
+}
+
+static void rebuild_play_columns_from_deck(GameState *game) {
     CardNode *deck_node = game->deck.head;
     int row;
 
@@ -39,12 +55,7 @@ static void rebuild_columns_from_deck(GameState *game, bool play_visibility) {
             }
 
             card = deck_node->card;
-            if (play_visibility) {
-                card.visible = row >= col;
-            } else {
-                card.visible = false;
-            }
-
+            card.visible = row >= col;
             card_list_append_card(&game->columns[col], card);
             deck_node = deck_node->next;
         }
@@ -62,7 +73,7 @@ static void replace_deck_from_list(GameState *game, CardList *new_deck) {
     new_deck->head = NULL;
     new_deck->tail = NULL;
     new_deck->count = 0;
-    rebuild_columns_from_deck(game, false);
+    rebuild_startup_columns_from_deck(game, false);
     game->phase = PHASE_STARTUP;
     game->won = false;
 }
@@ -87,7 +98,7 @@ void game_load_default_deck(GameState *game) {
         }
     }
 
-    rebuild_columns_from_deck(game, false);
+    rebuild_startup_columns_from_deck(game, false);
     game->phase = PHASE_STARTUP;
     game->won = false;
     game_set_message(game, "OK");
@@ -189,17 +200,7 @@ void game_show_deck(GameState *game) {
         deck_node = deck_node->next;
     }
 
-    rebuild_columns_from_deck(game, false);
-    {
-        int i;
-        for (i = 0; i < COLUMN_COUNT; i++) {
-            CardNode *column_node = game->columns[i].head;
-            while (column_node != NULL) {
-                column_node->card.visible = true;
-                column_node = column_node->next;
-            }
-        }
-    }
+    rebuild_startup_columns_from_deck(game, true);
     game_set_message(game, "OK");
 }
 
@@ -246,7 +247,7 @@ void game_shuffle_interleave(GameState *game, int split) {
     }
 
     game->deck = shuffled;
-    rebuild_columns_from_deck(game, false);
+    rebuild_startup_columns_from_deck(game, false);
     game->won = false;
     game_set_message(game, "OK");
 }
@@ -269,7 +270,7 @@ void game_shuffle_random(GameState *game) {
     }
 
     game->deck = shuffled;
-    rebuild_columns_from_deck(game, false);
+    rebuild_startup_columns_from_deck(game, false);
     game->won = false;
     game_set_message(game, "OK");
 }
@@ -281,7 +282,7 @@ void game_start(GameState *game) {
     }
 
     /* Re-deal from the saved deck and apply the initial Yukon visibility. */
-    rebuild_columns_from_deck(game, true);
+    rebuild_play_columns_from_deck(game);
     game->phase = PHASE_PLAY;
     game_update_win_state(game);
     game_set_message(game, "OK");
@@ -293,7 +294,7 @@ void game_quit_to_startup(GameState *game) {
         return;
     }
 
-    rebuild_columns_from_deck(game, false);
+    rebuild_startup_columns_from_deck(game, false);
     game->phase = PHASE_STARTUP;
     game->won = false;
     game_set_message(game, "OK");
